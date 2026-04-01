@@ -18,13 +18,13 @@ type apiConfig struct {
 	db               database.Client
 	jwtSecret        string
 	platform         string
+	s3Client         *s3.Client
 	filepathRoot     string
 	assetsRoot       string
 	s3Bucket         string
 	s3Region         string
 	s3CfDistribution string
 	port             string
-	s3Client         *s3.Client
 }
 
 func main() {
@@ -32,7 +32,7 @@ func main() {
 
 	pathToDB := os.Getenv("DB_PATH")
 	if pathToDB == "" {
-		log.Fatal("DB_URL must be set")
+		log.Fatal("DB_PATH must be set")
 	}
 
 	db, err := database.NewClient(pathToDB)
@@ -80,24 +80,23 @@ func main() {
 		log.Fatal("PORT environment variable is not set")
 	}
 
-	awsConfig, err := config.LoadDefaultConfig(context.Background(), config.WithRegion(s3Region))
+	awsCfg, err := config.LoadDefaultConfig(context.Background(), config.WithRegion(s3Region))
 	if err != nil {
-		log.Fatalf("failed loading aws config: %w", err)
+		log.Fatal(err)
 	}
-
-	s3Client := s3.NewFromConfig(awsConfig)
+	client := s3.NewFromConfig(awsCfg)
 
 	cfg := apiConfig{
 		db:               db,
 		jwtSecret:        jwtSecret,
 		platform:         platform,
+		s3Client:         client,
 		filepathRoot:     filepathRoot,
 		assetsRoot:       assetsRoot,
 		s3Bucket:         s3Bucket,
 		s3Region:         s3Region,
 		s3CfDistribution: s3CfDistribution,
 		port:             port,
-		s3Client:         s3Client,
 	}
 
 	err = cfg.ensureAssetsDir()
